@@ -151,3 +151,51 @@ class Legend(Artist):
         update: Literal["loc", "bbox"] = ...,
     ) -> None: ...
     def get_draggable(self) -> bool: ...
+
+class HorizontalLegend(Legend):
+    def __init__(
+        self,
+        parent: Axes | Figure,
+        handles: Iterable[Artist | tuple[Artist, ...]],
+        labels: Iterable[str],
+        *,
+        max_per_row: int = ...,
+        loc: LegendLocType | None = ...,
+        numpoints: int | None = ...,
+        markerscale: float | None = ...,
+        markerfirst: bool = ...,
+        reverse: bool = ...,
+        scatterpoints: int | None = ...,
+        scatteryoffsets: Iterable[float] | None = ...,
+        prop: FontProperties | dict[str, Any] | None = ...,
+        fontsize: float | str | None = ...,
+        labelcolor: ColorType
+        | Iterable[ColorType]
+        | Literal["linecolor", "markerfacecolor", "mfc", "markeredgecolor", "mec"]
+        | None = ...,
+        borderpad: float | None = ...,
+        labelspacing: float | None = ...,
+        handlelength: float | None = ...,
+        handleheight: float | None = ...,
+        handletextpad: float | None = ...,
+        borderaxespad: float | None = ...,
+        columnspacing: float | None = ...,
+        mode: Literal["expand"] | None = ...,
+        fancybox: bool | None = ...,
+        shadow: bool | dict[str, Any] | None = ...,
+        title: str | None = ...,
+        title_fontsize: float | None = ...,
+        framealpha: float | None = ...,
+        edgecolor: Literal["inherit"] | ColorType | None = ...,
+        facecolor: Literal["inherit"] | ColorType | None = ...,
+        bbox_to_anchor: BboxBase
+        | tuple[float, float]
+        | tuple[float, float, float, float]
+        | None = ...,
+        bbox_transform: Transform | None = ...,
+        frameon: bool | None = ...,
+        handler_map: dict[Artist | type, HandlerBase] | None = ...,
+        title_fontproperties: FontProperties | dict[str, Any] | None = ...,
+        alignment: Literal["center", "left", "right"] = ...,
+        draggable: bool = ...
+    ) -> None: ...

@@ -1821,14 +1821,16 @@ def test_horizontal_legend_vs_standard_different_layout(fig_test, fig_ref):
     ax_ref = fig_ref.subplots()
     for i in range(6):
         ax_ref.plot([i, i+1], label=f"{i}")
-    # Standard legend with 3 columns fills vertically first
-    # So items would be ordered: 0,2,4 / 1,3,5 (column-wise)
-    # While horizontal fills: 0,1,2 / 3,4,5 (row-wise)
-    # We create the same visual by reordering labels
-    labels_reordered = ["0", "2", "4", "1", "3", "5"]
+    # Standard legend with 3 columns fills column-wise (vertically first)
+    # To display row-wise as: 0,1,2 / 3,4,5
+    # We need columns: (0,3), (1,4), (2,5)
+    # So reorder as: 0,3,1,4,2,5
+    labels_reordered = ["0", "3", "1", "4", "2", "5"]
     handles = ax_ref.get_lines()
-    ax_ref.legend([handles[0], handles[2], handles[4], handles[1], handles[3], handles[5]],
-                  labels_reordered, ncols=3, loc='upper center')
+    handles_reordered = [handles[0], handles[3], handles[1],
+                         handles[4], handles[2], handles[5]]
+    ax_ref.legend(handles_reordered, labels_reordered,
+                  ncols=3, loc='upper center')
 
 
 def test_boxplot_legend_labels():

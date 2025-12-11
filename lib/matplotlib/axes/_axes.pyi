@@ -17,7 +17,7 @@ from matplotlib.container import BarContainer, ErrorbarContainer, StemContainer
 from matplotlib.contour import ContourSet, QuadContourSet
 from matplotlib.image import AxesImage, PcolorImage
 from matplotlib.inset import InsetIndicator
-from matplotlib.legend import Legend
+from matplotlib.legend import Legend, HorizontalLegend
 from matplotlib.legend_handler import HandlerBase
 from matplotlib.lines import Line2D, AxLine
 from matplotlib.mlab import GaussianKDE
@@ -75,6 +75,28 @@ class Axes(_AxesBase):
                *, loc: LegendLocType | None = ..., **kwargs) -> Legend: ...
     @overload
     def legend(self, *, loc: LegendLocType | None = ..., **kwargs) -> Legend: ...
+
+    @overload
+    def horizontal_legend(self) -> HorizontalLegend: ...
+    @overload
+    def horizontal_legend(
+        self, handles: Iterable[Artist | tuple[Artist, ...]], labels: Iterable[str],
+        *, max_per_row: int = ..., loc: LegendLocType | None = ..., **kwargs
+    ) -> HorizontalLegend: ...
+    @overload
+    def horizontal_legend(
+        self, *, handles: Iterable[Artist | tuple[Artist, ...]],
+        max_per_row: int = ..., loc: LegendLocType | None = ..., **kwargs
+    ) -> HorizontalLegend: ...
+    @overload
+    def horizontal_legend(
+        self, labels: Iterable[str],
+        *, max_per_row: int = ..., loc: LegendLocType | None = ..., **kwargs
+    ) -> HorizontalLegend: ...
+    @overload
+    def horizontal_legend(
+        self, *, max_per_row: int = ..., loc: LegendLocType | None = ..., **kwargs
+    ) -> HorizontalLegend: ...
 
     def inset_axes(
         self,
