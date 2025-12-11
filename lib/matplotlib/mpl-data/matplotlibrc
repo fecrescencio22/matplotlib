@@ -567,6 +567,7 @@
 #legend.shadow:        False    # if True, give background a shadow effect
 #legend.numpoints:     1        # the number of marker points in the legend line
 #legend.scatterpoints: 1        # number of scatter points
+#legend.ncols:         1        # number of columns in the legend
 #legend.markerscale:   1.0      # the relative size of legend markers vs. original
 #legend.fontsize:      medium
 #legend.labelcolor:    None

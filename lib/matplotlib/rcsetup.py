@@ -1172,6 +1172,8 @@ _validators = {
     "legend.numpoints":      validate_int,
     # the number of points in the legend line for scatter
     "legend.scatterpoints":  validate_int,
+    # the number of columns in the legend
+    "legend.ncols":          validate_int,
     "legend.fontsize":       validate_fontsize,
     "legend.title_fontsize": validate_fontsize_None,
     # color of the legend

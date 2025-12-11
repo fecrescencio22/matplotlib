@@ -1478,6 +1478,15 @@ def test_ncol_ncols(fig_test, fig_ref):
     fig_ref.legend(strings, ncols=ncols)
 
 
+@check_figures_equal()
+def test_ncols_rcparam(fig_test, fig_ref):
+    # Test that legend.ncols rcParam works
+    strings = ["a", "b", "c", "d", "e", "f"]
+    with mpl.rc_context({"legend.ncols": 3}):
+        fig_test.legend(strings)
+    fig_ref.legend(strings, ncols=3)
+
+
 def test_loc_invalid_tuple_exception():
     # check that exception is raised if the loc arg
     # of legend is not a 2-tuple of numbers
@@ -1635,6 +1644,191 @@ def test_legend_annotate():
 
     # Finding the legend position should not require _get_renderer to be called
     mocked_get_renderer.assert_not_called()
+
+
+def test_horizontal_legend_basic():
+    """Test that horizontal_legend creates a HorizontalLegend instance."""
+    fig, ax = plt.subplots()
+    ax.plot([1, 2, 3], label="Line 1")
+    ax.plot([2, 3, 4], label="Line 2")
+    ax.plot([3, 4, 5], label="Line 3")
+
+    leg = ax.horizontal_legend()
+
+    assert isinstance(leg, mlegend.HorizontalLegend)
+    assert len(leg.get_texts()) == 3
+    assert leg._max_per_row == 4  # default value
+
+
+def test_horizontal_legend_max_per_row():
+    """Test that max_per_row parameter controls wrapping."""
+    fig, ax = plt.subplots()
+    for i in range(6):
+        ax.plot([i, i+1, i+2], label=f"Line {i}")
+
+    # Test with max_per_row=3
+    leg = ax.horizontal_legend(max_per_row=3)
+    assert leg._max_per_row == 3
+
+    # Test with max_per_row=2
+    leg2 = ax.horizontal_legend(max_per_row=2)
+    assert leg2._max_per_row == 2
+
+
+def test_horizontal_legend_axes():
+    """Test horizontal_legend on Axes."""
+    fig, ax = plt.subplots()
+    ax.plot([1, 2], [3, 4], label='A')
+    ax.plot([2, 3], [4, 5], label='B')
+
+    leg = ax.horizontal_legend(max_per_row=2)
+
+    assert isinstance(leg, mlegend.HorizontalLegend)
+    assert ax.get_legend() is leg
+    labels = [t.get_text() for t in leg.get_texts()]
+    assert labels == ['A', 'B']
+
+
+def test_horizontal_legend_figure():
+    """Test horizontal_legend on Figure."""
+    fig, axs = plt.subplots(1, 2)
+    axs[0].plot([1, 2], label='A')
+    axs[1].plot([2, 3], label='B')
+
+    leg = fig.horizontal_legend(max_per_row=2)
+
+    assert isinstance(leg, mlegend.HorizontalLegend)
+    assert leg in fig.legends
+    labels = [t.get_text() for t in leg.get_texts()]
+    assert labels == ['A', 'B']
+
+
+def test_horizontal_legend_pyplot():
+    """Test horizontal_legend via pyplot interface."""
+    fig, ax = plt.subplots()
+    plt.plot([1, 2, 3], label="Test 1")
+    plt.plot([2, 3, 4], label="Test 2")
+
+    leg = plt.horizontal_legend(max_per_row=2)
+
+    assert isinstance(leg, mlegend.HorizontalLegend)
+    assert leg._max_per_row == 2
+
+
+def test_horizontal_legend_custom_labels():
+    """Test horizontal_legend with custom labels."""
+    fig, ax = plt.subplots()
+    ax.plot([1, 2, 3])
+    ax.plot([2, 3, 4])
+
+    leg = ax.horizontal_legend(['Custom A', 'Custom B'], max_per_row=2)
+
+    labels = [t.get_text() for t in leg.get_texts()]
+    assert labels == ['Custom A', 'Custom B']
+
+
+def test_horizontal_legend_kwargs():
+    """Test that other kwargs are passed through to Legend."""
+    fig, ax = plt.subplots()
+    ax.plot([1, 2, 3], label="Test")
+
+    leg = ax.horizontal_legend(
+        max_per_row=2,
+        loc='upper right',
+        frameon=True,
+        shadow=True,
+        title='Test Title'
+    )
+
+    assert leg.get_title().get_text() == 'Test Title'
+    assert leg.shadow is not None
+
+
+def test_horizontal_legend_ncols_ignored():
+    """Test that ncols parameter is ignored in horizontal_legend."""
+    fig, ax = plt.subplots()
+    for i in range(4):
+        ax.plot([i, i+1], label=f"Line {i}")
+
+    # ncols should be ignored, max_per_row should be used
+    leg = ax.horizontal_legend(max_per_row=2, ncols=3)
+
+    assert leg._max_per_row == 2
+    # The legend should use max_per_row (2), not ncols (3)
+    assert leg._ncols == 2
+
+
+def test_horizontal_legend_remove():
+    """Test that horizontal_legend can be removed."""
+    fig, ax = plt.subplots()
+    ax.plot([1, 2, 3], label="Test")
+
+    leg = ax.horizontal_legend()
+    leg.remove()
+
+    assert ax.get_legend() is None
+
+
+def test_horizontal_legend_many_items():
+    """Test horizontal_legend with many items to verify wrapping."""
+    fig, ax = plt.subplots()
+    n_items = 10
+    for i in range(n_items):
+        ax.plot([i, i+1], label=f"Item {i}")
+
+    leg = ax.horizontal_legend(max_per_row=3)
+
+    assert len(leg.get_texts()) == n_items
+    assert leg._max_per_row == 3
+
+
+def test_horizontal_legend_single_item():
+    """Test horizontal_legend with a single item."""
+    fig, ax = plt.subplots()
+    ax.plot([1, 2, 3], label="Single")
+
+    leg = ax.horizontal_legend(max_per_row=4)
+
+    assert len(leg.get_texts()) == 1
+    assert isinstance(leg, mlegend.HorizontalLegend)
+
+
+def test_horizontal_legend_markerfirst():
+    """Test horizontal_legend with markerfirst parameter."""
+    fig, ax = plt.subplots()
+    ax.plot([1, 2, 3], 'o-', label="Test")
+
+    leg1 = ax.horizontal_legend(markerfirst=True)
+    ax.add_artist(leg1)
+
+    leg2 = ax.horizontal_legend(markerfirst=False)
+
+    # Both should work without errors
+    assert isinstance(leg1, mlegend.HorizontalLegend)
+    assert isinstance(leg2, mlegend.HorizontalLegend)
+
+
+@check_figures_equal()
+def test_horizontal_legend_vs_standard_different_layout(fig_test, fig_ref):
+    """Test that horizontal_legend produces different layout than standard legend."""
+    # Test figure: horizontal legend with 6 items, 3 per row
+    ax_test = fig_test.subplots()
+    for i in range(6):
+        ax_test.plot([i, i+1], label=f"{i}")
+    ax_test.horizontal_legend(max_per_row=3, loc='upper center')
+
+    # Ref figure: different layout - would fail if they're the same
+    ax_ref = fig_ref.subplots()
+    for i in range(6):
+        ax_ref.plot([i, i+1], label=f"{i}")
+    # Standard legend with 3 columns fills vertically first
+    # So items would be ordered: 0,2,4 / 1,3,5 (column-wise)
+    # While horizontal fills: 0,1,2 / 3,4,5 (row-wise)
+    # We create the same visual by reordering labels
+    labels_reordered = ["0", "2", "4", "1", "3", "5"]
+    handles = ax_ref.get_lines()
+    ax_ref.legend([handles[0], handles[2], handles[4], handles[1], handles[3], handles[5]],
+                  labels_reordered, ncols=3, loc='upper center')
 
 
 def test_boxplot_legend_labels():

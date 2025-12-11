@@ -353,6 +353,63 @@ class Axes(_AxesBase):
     def _remove_legend(self, legend):
         self.legend_ = None
 
+    def horizontal_legend(self, *args, max_per_row=4, **kwargs):
+        """
+        Place a legend with horizontal (row-wise) layout on the Axes.
+
+        This is a convenience method that creates a legend with items arranged
+        horizontally first, wrapping to new rows as needed. Unlike the standard
+        `legend()` method which fills column-wise, this method fills row-wise.
+
+        Parameters
+        ----------
+        max_per_row : int, default: 4
+            Maximum number of items per row before wrapping to a new row.
+
+        *args, **kwargs
+            Other arguments are passed to `Legend`. See `legend()` for details.
+            Note: 'ncols' parameter is ignored if provided.
+
+        Returns
+        -------
+        `~matplotlib.legend.HorizontalLegend`
+            The legend instance.
+
+        See Also
+        --------
+        legend : Standard legend with column-wise filling.
+
+        Examples
+        --------
+        Create a horizontal legend with up to 4 items per row::
+
+            lines = ax.plot([1, 2], [3, 4], [2, 3], [4, 5],
+                            [1, 3], [2, 4], [3, 5], [4, 6])
+            ax.horizontal_legend(max_per_row=4)
+
+        With custom labels::
+
+            ax.horizontal_legend(['A', 'B', 'C', 'D'], max_per_row=2)
+
+        Notes
+        -----
+        This method is particularly useful for corporate style guides that require
+        legends to span horizontally across the plot area.
+
+        .. versionadded:: 3.10
+        """
+        handles, labels, kwargs = mlegend._parse_legend_args([self], *args, **kwargs)
+
+        # Remove ncols if user provided it - we use max_per_row instead
+        kwargs.pop('ncols', None)
+        kwargs.pop('ncol', None)
+
+        self.legend_ = mlegend.HorizontalLegend(
+            self, handles, labels, max_per_row=max_per_row, **kwargs
+        )
+        self.legend_._remove_method = self._remove_legend
+        return self.legend_
+
     def inset_axes(self, bounds, *, transform=None, zorder=5, **kwargs):
         """
         Add a child inset Axes to this existing Axes.

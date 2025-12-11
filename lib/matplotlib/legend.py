@@ -375,7 +375,7 @@ class Legend(Artist):
         borderaxespad=None,  # pad between the Axes and legend border
         columnspacing=None,  # spacing between columns
 
-        ncols=1,     # number of columns
+        ncols=None,  # number of columns
         mode=None,  # horizontal distribution of columns: None or "expand"
 
         fancybox=None,  # True: fancy box, False: rounded box, None: rcParam
@@ -392,7 +392,7 @@ class Legend(Artist):
         handler_map=None,
         title_fontproperties=None,  # properties for the legend title
         alignment="center",       # control the alignment within the legend box
-        ncol=1,  # synonym for ncols (backward compatibility)
+        ncol=None,  # synonym for ncols (backward compatibility)
         draggable=False  # whether the legend can be dragged with the mouse
     ):
         """
@@ -460,9 +460,14 @@ class Legend(Artist):
             handles = [*reversed(handles)]
 
         handles = list(handles)
+        # Determine ncols value: prefer ncols, fall back to ncol for backward compatibility
+        if ncols is None and ncol is not None:
+            ncols = ncol
+        # Get value from rcParams if not explicitly provided
+        self._ncols = mpl._val_or_rc(ncols, 'legend.ncols')
+        # Override to 1 if too few handles
         if len(handles) < 2:
-            ncols = 1
-        self._ncols = ncols if ncols != 1 else ncol
+            self._ncols = 1
 
         if self.numpoints <= 0:
             raise ValueError("numpoints must be > 0; it was %d" % numpoints)
@@ -1230,6 +1235,173 @@ class Legend(Artist):
     def get_draggable(self):
         """Return ``True`` if the legend is draggable, ``False`` otherwise."""
         return self._draggable is not None
+
+
+class HorizontalLegend(Legend):
+    """
+    A Legend subclass optimized for horizontal layouts with row-wise filling.
+
+    This class is designed for scenarios where legend items should be arranged
+    horizontally (row-first), such as corporate style guides requiring items
+    to span horizontally across the plot.
+
+    Unlike the standard Legend which fills column-wise (vertically first),
+    HorizontalLegend fills row-wise (horizontally first).
+
+    Parameters
+    ----------
+    parent : `~matplotlib.axes.Axes` or `.Figure`
+        The artist that contains the legend.
+
+    handles : list of `.Artist`
+        A list of Artists (lines, patches) to be added to the legend.
+
+    labels : list of str
+        A list of labels to show next to the artists.
+
+    max_per_row : int, default: 4
+        Maximum number of items per row. The legend will wrap to a new row
+        after this many items.
+
+    **kwargs
+        Other keyword arguments are passed to `Legend.__init__()`.
+
+    Examples
+    --------
+    >>> from matplotlib import pyplot as plt
+    >>> fig, ax = plt.subplots()
+    >>> lines = ax.plot([1, 2], [3, 4], [2, 3], [4, 5])
+    >>> from matplotlib.legend import HorizontalLegend
+    >>> leg = HorizontalLegend(ax, *ax.get_legend_handles_labels(),
+    ...                        max_per_row=2)
+    >>> ax.add_artist(leg)
+
+    See Also
+    --------
+    Legend : Standard legend with column-wise filling.
+
+    Notes
+    -----
+    .. versionadded:: 3.10
+    """
+
+    def __init__(
+        self,
+        parent,
+        handles,
+        labels,
+        *,
+        max_per_row=4,
+        **kwargs
+    ):
+        # Don't pass ncols to parent - we'll calculate it for row layout
+        kwargs.pop('ncols', None)
+        kwargs.pop('ncol', None)
+
+        # Store max_per_row for use in _init_legend_box
+        self._max_per_row = max_per_row
+
+        # Initialize parent with ncols set to max_per_row
+        super().__init__(parent, handles, labels, ncols=max_per_row, **kwargs)
+
+    def _init_legend_box(self, handles, labels, markerfirst=True):
+        """
+        Initialize legend_box with row-wise filling.
+
+        Overrides the parent method to arrange items horizontally first.
+        """
+        import math
+
+        fontsize = self._fontsize
+
+        # Create handle and label boxes (same as parent)
+        handles_and_labels = []
+        handle_list = []
+        text_list = []
+
+        descent = 0.35 * fontsize * (self.handleheight - 0.7)
+        height = fontsize * self.handleheight - descent
+
+        legend_handler_map = self.get_legend_handler_map()
+
+        for orig_handle, label in zip(handles, labels):
+            handler = self.get_legend_handler(legend_handler_map, orig_handle)
+            if handler is None:
+                _api.warn_external(
+                    "Legend does not support handles for "
+                    f"{type(orig_handle).__name__} "
+                    "instances.\nA proxy artist may be used "
+                    "instead.\nSee: https://matplotlib.org/"
+                    "stable/users/explain/axes/legend_guide.html"
+                    "#controlling-the-legend-entries")
+                handle_list.append(None)
+            else:
+                textbox = TextArea(label, multilinebaseline=True,
+                                   textprops=dict(
+                                       verticalalignment='baseline',
+                                       horizontalalignment='left',
+                                       fontproperties=self.prop))
+                handlebox = DrawingArea(width=self.handlelength * fontsize,
+                                        height=height,
+                                        xdescent=0., ydescent=descent)
+
+                text_list.append(textbox._text)
+                handle_list.append(handler.legend_artist(self, orig_handle,
+                                                         fontsize, handlebox))
+                handles_and_labels.append((handlebox, textbox))
+
+        # ROW-WISE PACKING (different from parent)
+        n_items = len(handles_and_labels)
+        nrows = math.ceil(n_items / self._max_per_row)
+
+        rowbox = []
+        for row_idx in range(nrows):
+            start_idx = row_idx * self._max_per_row
+            end_idx = min(start_idx + self._max_per_row, n_items)
+            row_items = handles_and_labels[start_idx:end_idx]
+
+            # Create item boxes (handle + label pairs) for this row
+            itemboxes = []
+            for handlebox, textbox in row_items:
+                itembox = HPacker(
+                    pad=0,
+                    sep=self.handletextpad * fontsize,
+                    children=[handlebox, textbox] if markerfirst else [textbox, handlebox],
+                    align="baseline"
+                )
+                itemboxes.append(itembox)
+
+            # Pack items horizontally in this row
+            row = HPacker(
+                pad=0,
+                sep=self.columnspacing * fontsize,
+                align="baseline",
+                children=itemboxes
+            )
+            rowbox.append(row)
+
+        # Pack all rows vertically
+        mode = "expand" if self._mode == "expand" else "fixed"
+        self._legend_handle_box = VPacker(
+            pad=0,
+            sep=self.labelspacing * fontsize,
+            align=self._alignment,
+            mode=mode,
+            children=rowbox
+        )
+
+        # Create the overall legend box (same as parent)
+        self._legend_title_box = TextArea("")
+        self._legend_box = VPacker(
+            pad=self.borderpad * fontsize,
+            sep=self.labelspacing * fontsize,
+            align=self._alignment,
+            children=[self._legend_title_box, self._legend_handle_box]
+        )
+        self._legend_box.set_figure(self.get_figure(root=False))
+        self._legend_box.axes = self.axes
+        self.texts = text_list
+        self.legend_handles = handle_list
 
 
 # Helper functions to parse legend arguments for both `figure.legend` and

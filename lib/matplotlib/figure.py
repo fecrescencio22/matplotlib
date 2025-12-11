@@ -1141,6 +1141,56 @@ default: %(va)s
         self.stale = True
         return l
 
+    def horizontal_legend(self, *args, max_per_row=4, **kwargs):
+        """
+        Place a legend with horizontal layout on the Figure.
+
+        This is a convenience method that creates a legend with items arranged
+        horizontally first, wrapping to new rows as needed. Unlike the standard
+        `legend()` method which fills column-wise, this method fills row-wise.
+
+        Parameters
+        ----------
+        max_per_row : int, default: 4
+            Maximum number of items per row before wrapping to a new row.
+
+        *args, **kwargs
+            Other arguments are passed to `Legend`. See `legend()` for details.
+            Note: 'ncols' parameter is ignored if provided.
+
+        Returns
+        -------
+        `~matplotlib.legend.HorizontalLegend`
+            The legend instance.
+
+        See Also
+        --------
+        legend : Standard legend with column-wise filling.
+        Axes.horizontal_legend
+
+        Notes
+        -----
+        This method is particularly useful for corporate style guides that require
+        legends to span horizontally across the plot area.
+
+        .. versionadded:: 3.10
+        """
+        handles, labels, kwargs = mlegend._parse_legend_args(self.axes, *args, **kwargs)
+
+        # Remove ncols if user provided it - we use max_per_row instead
+        kwargs.pop('ncols', None)
+        kwargs.pop('ncol', None)
+
+        # Explicitly set the bbox transform if the user hasn't
+        kwargs.setdefault("bbox_transform", self.transSubfigure)
+
+        l = mlegend.HorizontalLegend(self, handles, labels,
+                                     max_per_row=max_per_row, **kwargs)
+        self.legends.append(l)
+        l._remove_method = self.legends.remove
+        self.stale = True
+        return l
+
     @_docstring.interpd
     def text(self, x, y, s, fontdict=None, **kwargs):
         """
